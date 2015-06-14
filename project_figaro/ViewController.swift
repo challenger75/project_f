@@ -68,8 +68,6 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
                 let parsedObject: AnyObject? = NSJSONSerialization.JSONObjectWithData(data,
                     options: NSJSONReadingOptions.AllowFragments,
                     error:&parseError)
-                var title: String
-                var subtitle: String
                 var photos: String
                 var start:  String.Index?
 
