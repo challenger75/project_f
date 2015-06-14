@@ -7,7 +7,6 @@
 //
 
 import UIKit
-import SwiftyJSON
 
 class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
     var articles: [Article] = [] /* We'll store each article in an object array */
@@ -65,28 +64,57 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
             }
             else
             {
-                let json = JSON(data: data)
+                var parseError: NSError?
+                let parsedObject: AnyObject? = NSJSONSerialization.JSONObjectWithData(data,
+                    options: NSJSONReadingOptions.AllowFragments,
+                    error:&parseError)
                 var title: String
                 var subtitle: String
                 var photos: String
                 var start:  String.Index?
 
                 /* We iterate through each article to get title, subtitle, photos and we store it in the article object*/
-                while (i < json["rankings"].count)
+                let ranking: NSDictionary = (parsedObject as? NSDictionary)!
+                while (i < ranking["rankings"]!.count)
                 {
-                    title = json["articles"][i]["title"].stringValue
-                    subtitle = json["articles"][i]["subtitle"].stringValue
-                    photos = json["articles"][i]["photos"][0]["url"].stringValue
-                    /* if there is a photo we get the param of the url to get the link of the picture */
-                    if photos != ""
-                    {
-                        start = photos.rangeOfString("?url=")?.endIndex
-                        photos = photos.substringFromIndex(start!)
+                    if let article = parsedObject as? NSDictionary {
+                        if let index = article["articles"] as? NSArray {
+                            if let tags = index[i] as? NSDictionary
+                            {
+                                let title = tags["title"] as? String
+                                let subtitle = tags["subtitle"] as? String
+                                if let photo = tags["photos"] as? NSArray
+                                {
+                                    if photo.count > 0
+                                    {
+                                        if let first = photo[0] as? NSDictionary
+                                        {
+                                            if var photos = first["url"] as? String
+                                            {
+                                            /* if there is a photo we get the param of the url to get the link of the picture */
+                                                start = photos.rangeOfString("?url=")?.endIndex
+                                                photos = photos.substringFromIndex(start!)
+                                                var article = Article(title: title!, subtitle: subtitle!, photos: photos)
+                                                 self.articles.append(article)
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        photos = ""
+                                        var article = Article(title: title!, subtitle: subtitle!, photos: photos)
+                                        self.articles.append(article)
+                                    }
+                                }
+
+                            }
+                        }
                     }
+                    
+                   
+                    i++
+
                     /* We create and initialize our Article object and append it in the array */
-                    var article = Article(title: title, subtitle: subtitle, photos: photos)
-                    self.articles.append(article)
-                    i++;
                 }
                 /* let's reload the tableView to display what we got from the json */
                 dispatch_async(dispatch_get_main_queue(), { () -> Void in
